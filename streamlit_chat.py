@@ -2,7 +2,6 @@ from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient, models
 from qdrant_client.http.models import Distance, VectorParams
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 
 import streamlit as st
