@@ -188,13 +188,12 @@ def main():
 			)
 	header.write("""<div class='fixed-header'/>""", unsafe_allow_html=True)
 
-	### Custom CSS for the sticky header
+	### Custom CSS for the sticky header top: 3.755rem;
 	st.markdown(
 		"""
 	<style>
 		div[data-testid="stVerticalBlock"] div:has(div.fixed-header) {
 			position: sticky;
-			top: 3.755rem;
 			background-color: white;
 			z-index: 999;
 		}
