@@ -1,9 +1,9 @@
 jupyterlab==4.3.5
 streamlit==1.41.0
 openai==1.61.0
-chromadb==0.3.29
 langchain==0.3.17
 langchain-openai==0.3.3
 langchain-chroma>=0.1.2
+langchain-qdrant==0.2.0 
+qdrant-client==1.13.2 
 openpyxl==3.1.5
-pysqlite3-binary

@@ -1,4 +1,6 @@
-
+from langchain_qdrant import QdrantVectorStore
+from qdrant_client import QdrantClient, models
+from qdrant_client.http.models import Distance, VectorParams
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
@@ -8,9 +10,7 @@ import openai
 import os
 import hmac
 
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 
 lang_dict = {
 	"🇧🇪  Nederlands":"NL",
@@ -39,6 +39,8 @@ You can use the context of the entire chat history to answer any follow-up quest
 """
 
 context_template_text = "The following context has been added to the conversation: {context}"
+
+
 
 def get_context(
 	query,
@@ -96,8 +98,7 @@ def main():
 	if not check_password():
 		st.stop()  # Do not continue if check_password is not True.
 	
-	
-	
+
 	
 	def new_question():
 		st.session_state.new_question = True
@@ -118,6 +119,11 @@ def main():
 		st.session_state.language = lang_dict[st.session_state.new_language]
 		new_question()
 	
+	st.set_page_config(
+		layout="centered",
+		page_icon="./SCARBOT_AVATAR.png",
+	) # centered wide
+	
 	if "language" not in st.session_state.keys():
 		st.session_state.language = 'NL'
 	
@@ -136,15 +142,20 @@ def main():
 			model="text-embedding-3-large",
 		)
 	
-	if "vector_store" not in st.session_state.keys():
-		st.session_state.vectorstore = Chroma(
-			collection_name="myscarspecialist",
-    		embedding_function=st.session_state.embedding_function,
-    		persist_directory="./myscarspecialist_chroma_db",
-    	)
+	@st.cache_resource
+	def get_qdrant_client():
+		client = QdrantClient(path="./myscarspecialist_qdrant_db")
+		return client
 	
-	if "client" not in st.session_state.keys():
-		st.session_state.client = ChatOpenAI(
+	if "vectorstore" not in st.session_state.keys():
+		st.session_state.vectorstore = QdrantVectorStore(
+			client=get_qdrant_client(),
+			collection_name="myscarspecialist",
+			embedding=st.session_state.embedding_function,
+		)
+		
+	if "openai_client" not in st.session_state.keys():
+		st.session_state.openai_client = ChatOpenAI(
 			model="gpt-4o",
 			temperature=0.2,
 			max_tokens=None,
@@ -159,10 +170,8 @@ def main():
 	if "chat_history" not in st.session_state.keys():
 		st.session_state.chat_history = [] 
 	
-	st.set_page_config(
-		layout="centered",
-		page_icon="./SCARBOT_AVATAR.png",
-	) # centered wide
+	
+	
 	
 	
 	header = st.container()
@@ -231,11 +240,19 @@ def main():
 			st.session_state.chat_history.append({'role':'system', 'content':system_prompt})
 			
 			# Then add the context prompt
-			with st.spinner('Browsing website...' ):
+			with st.spinner('Browsing website...' if st.session_state.language == 'EN' else "Website doorzoeken..."):
 				st.session_state.context = get_context(
 					st.session_state.question,
 					st.session_state.vectorstore,
 					n_chunks=3,
+					filters=models.Filter(
+						must=[
+							models.FieldCondition(
+								key="metadata.language",
+								match=models.MatchValue(value='nl' if st.session_state.language == "NL" else 'en'),
+							),
+						]
+					),
 				)
 			context_prompt = context_template_text.format(context = st.session_state.context)
 			st.session_state.messages.append({'role':'system', 'content':context_prompt})
@@ -252,6 +269,14 @@ def main():
 					last_question,
 					st.session_state.vectorstore,
 					n_chunks=2,
+					filters=models.Filter(
+						must=[
+							models.FieldCondition(
+								key="metadata.language",
+								match=models.MatchValue(value='nl' if st.session_state.language == "NL" else 'en'),
+							),
+						]
+					),
 				)
 			context_prompt = context_template_text.format(context = follow_up_context)
 			st.session_state.messages.append({'role':'system', 'content':context_prompt})
@@ -260,7 +285,7 @@ def main():
 		with st.spinner('Composing answer...' if st.session_state.language == 'EN' else "Antwoord genereren..."):	
 			answer = get_llm_response(
 				st.session_state.messages,
-				st.session_state.client,
+				st.session_state.openai_client,
 			)
 		st.session_state.messages.append({'role':'assistant', 'content':answer})
 		st.session_state.chat_history.append({'role':'assistant', 'content':answer})
@@ -279,7 +304,7 @@ def main():
 
 		st.chat_input("Enter your follow-up question..." if st.session_state.language == 'EN' else "Zet het gesprek verder...", key="chat_input", on_submit = add_user_input)
 
-
+		
 	
 	
 	
