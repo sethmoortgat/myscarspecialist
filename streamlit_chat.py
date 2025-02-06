@@ -39,6 +39,25 @@ You can use the context of the entire chat history to answer any follow-up quest
 
 context_template_text = "The following context has been added to the conversation: {context}"
 
+question_to_prompt_system_text = """Your task is to, given a chat history and the latest user question, which might reference context in the chat history, 
+to formulate a standalone question which can be understood without the chat history.
+This question will be used to retrieve relevant context to answer the latest user question.
+Do NOT answer the question, just reformulate it if needed and otherwise return it as is.
+
+Only return the reformulated question, do not say anything else.
+Return only a single consistent answer that is precise to the request of the user.
+"""
+
+question_to_prompt_user_text = """
+Chat history:
+{chat_history}
+
+Latest user question:
+{question}
+"""
+
+	
+
 
 
 def get_context(
@@ -67,6 +86,29 @@ def get_llm_response(
 ):
 	response = llm.invoke(messages)
 	return response.content
+
+
+def transfor_user_question(last_question,messages,llm):
+	messages_flat = ""
+	for message in messages:
+		role = message['role']
+		content = message['content']
+		messages_flat = messages_flat + f"{role}: {content} \n\n"
+	
+	system_prompt = question_to_prompt_system_text
+	user_prompt = question_to_prompt_user_text.format(chat_history = messages_flat,
+														question = last_question)
+														
+	messages_total = [
+		{"role":"system", "content":system_prompt},
+		{"role":"user", "content":user_prompt},
+	]
+	
+	resp = get_llm_response(
+		messages_total,
+		llm,
+	)
+	return resp
 
 def main():
 
@@ -217,17 +259,8 @@ def main():
 			st.markdown('## How can I help you?' if st.session_state.language == 'EN' else "## Hoe kan ik je helpen?")
 
 		label = 'Ask your question' if st.session_state.language == 'EN' else "Stel je vraag"
-		#st.markdown(f"## {label}")
+
 		st.text_input("original question", placeholder = label, key='question', on_change=existing_question, label_visibility="collapsed")
-		st.components.v1.html(
-			f"""
-			<script>
-				var elems = window.parent.document.querySelectorAll('div[class*="stTextInput"] p');
-				var elem = Array.from(elems).find(x => x.innerText == '{label}');
-				elem.style.fontSize = '20px'; // the fontsize you want to set it to
-			</script>
-			"""
-		)
 
 		
 	else:
@@ -263,9 +296,11 @@ def main():
 		
 		else:
 			last_question = st.session_state.messages[-1]["content"]
+			transformed_last_question = transfor_user_question(last_question,st.session_state.messages,st.session_state.openai_client)
+
 			with st.spinner('Browsing website...' if st.session_state.language == 'EN' else "Website doorzoeken..."):
 				follow_up_context = get_context(
-					last_question,
+					transformed_last_question,
 					st.session_state.vectorstore,
 					n_chunks=2,
 					filters=models.Filter(
@@ -301,7 +336,8 @@ def main():
 					with st.chat_message(message["role"],avatar=icon): st.write(message["content"])
 		
 
-		st.chat_input("Enter your follow-up question..." if st.session_state.language == 'EN' else "Zet het gesprek verder...", key="chat_input", on_submit = add_user_input)
+		st.chat_input("Enter your follow-up question..." if st.session_state.language == 'EN' else "Zet het gesprek verder...", 
+			key="chat_input", on_submit = add_user_input)
 
 		
 	
