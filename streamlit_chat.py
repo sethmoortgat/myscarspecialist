@@ -194,6 +194,7 @@ def main():
 	<style>
 		div[data-testid="stVerticalBlock"] div:has(div.fixed-header) {
 			position: sticky;
+			top: 0rem;
 			background-color: white;
 			z-index: 999;
 		}
@@ -217,7 +218,7 @@ def main():
 
 		label = 'Ask your question' if st.session_state.language == 'EN' else "Stel je vraag"
 		#st.markdown(f"## {label}")
-		st.text_input("", placeholder = label, key='question', on_change=existing_question)
+		st.text_input("original question", placeholder = label, key='question', on_change=existing_question, label_visibility="collapsed")
 		st.components.v1.html(
 			f"""
 			<script>
