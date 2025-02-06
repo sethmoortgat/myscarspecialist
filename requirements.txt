@@ -1,0 +1,7 @@
+jupyterlab==4.3.5
+streamlit==1.41.0
+openai==1.61.0
+langchain==0.3.17
+langchain-openai==0.3.3
+langchain-chroma>=0.1.2
+openpyxl==3.1.5 
