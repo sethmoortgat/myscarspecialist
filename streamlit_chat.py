@@ -8,6 +8,10 @@ import openai
 import os
 import hmac
 
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 lang_dict = {
 	"🇧🇪  Nederlands":"NL",
 	"🇬🇧  English":"EN"
