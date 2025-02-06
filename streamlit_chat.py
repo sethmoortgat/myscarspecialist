@@ -194,7 +194,7 @@ def main():
 	<style>
 		div[data-testid="stVerticalBlock"] div:has(div.fixed-header) {
 			position: sticky;
-			top: 0rem;
+			top: 3.755rem;
 			background-color: white;
 			z-index: 999;
 		}
