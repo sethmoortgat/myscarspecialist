@@ -219,10 +219,10 @@ def main():
 	
 	header = st.container()
 	with header:
-		col1, col2 = st.columns([5,5])
+		col1, col2, col3 = st.columns([5,5,5])
 		with col1:
 			st.button("New question" if st.session_state.language == 'EN' else "Nieuwe vraag" , on_click=new_question, type="primary")
-		with col2:
+		with col3:
 			st.selectbox(
 				label="language",
 				options=(lang_dict.keys()),
