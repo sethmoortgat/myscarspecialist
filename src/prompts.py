@@ -21,7 +21,9 @@ Add the URL in the following form: "You can read more about <topic_the_question_
 You can also provide multiple URLs if your answer is based on information from several webpages.
 """
 
-context_template_text = "The following context has been added to the conversation: {context}"
+context_template_text = (
+    "The following context has been added to the conversation: {context}"
+)
 
 question_to_prompt_system_text = """Your task is to, given a chat history and the latest user question, which might reference context in the chat history, 
 to formulate a standalone question which can be understood without the chat history.

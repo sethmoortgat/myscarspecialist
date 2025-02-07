@@ -7,3 +7,4 @@ langchain-chroma>=0.1.2
 langchain-qdrant==0.2.0 
 qdrant-client==1.13.2 
 openpyxl==3.1.5
+ruff
