@@ -25,8 +25,8 @@ import logging
 
 # configure logger
 logging.basicConfig(
-    level=logging.INFO,  # Logniveau (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-    format="%(asctime)s - %(levelname)s - %(message)s",  # Logformaat
+	level=logging.INFO,  # Logniveau (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+	format="%(asctime)s - %(levelname)s - %(message)s",  # Logformaat
 )
 
 
