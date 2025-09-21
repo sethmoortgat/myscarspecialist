@@ -2,6 +2,7 @@ from src.prompts import (
     question_to_prompt_system_text,
     question_to_prompt_user_text,
 )
+import logging
 
 
 def get_context(
@@ -10,11 +11,37 @@ def get_context(
     n_chunks=3,
     filters=None,
 ):
+    # Debug log what filter is being used
+    logging.info(f"Using filter: {filters}")
+
+    # Try to retrieve chunks
     chunks = vectorstore.max_marginal_relevance_search(
         query,
         k=n_chunks,
         filter=filters,
     )
+
+    # Log the number of chunks found
+    logging.info(f"Found {len(chunks)} chunks for query: {query}")
+
+    # If no chunks found, try without filter
+    if len(chunks) == 0 and filters is not None:
+        logging.warning(f"No chunks found with filter. Trying without filter...")
+        chunks = vectorstore.max_marginal_relevance_search(
+            query,
+            k=n_chunks,
+            filter=None,
+        )
+        logging.info(f"Found {len(chunks)} chunks without filter")
+
+    # Collect and log the source URLs
+    if chunks:
+        source_urls = [chunk.metadata["url"] for chunk in chunks]
+        logging.info(f"Chunks retrieved from URLs: {source_urls}")
+
+        # Debug the metadata structure of the first chunk
+        if len(chunks) > 0:
+            logging.info(f"First chunk metadata: {chunks[0].metadata}")
 
     context = ""
     for _chunk in chunks:
