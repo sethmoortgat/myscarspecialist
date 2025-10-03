@@ -163,40 +163,7 @@ def main():
     if "chat_history" not in st.session_state.keys():
         st.session_state.chat_history = []
 
-    # ***************
-    #
-    # Sticky header
-    #
-    # ***************
 
-    header = st.container()
-    with header:
-        col1, col2 = st.columns([5, 10])
-        with col1:
-            st.button(
-                "New question" if st.session_state.language == "EN" else "Nieuwe vraag",
-                on_click=new_question,
-                type="primary",
-            )
-    header.write("""<div class='fixed-header'/>""", unsafe_allow_html=True)
-
-    ### Custom CSS for the sticky header top: 3.755rem;
-    st.markdown(
-        """
-	<style>
-		div[data-testid="stVerticalBlock"] div:has(div.fixed-header) {
-			position: sticky;
-			top: 3.755rem;
-			background-color: white;
-			z-index: 999;
-		}
-		.fixed-header {
-			border-bottom: 1px solid black;
-		}
-	</style>
-		""",
-        unsafe_allow_html=True,
-    )
 
     # ***************
     #
@@ -373,13 +340,24 @@ def main():
                     with st.chat_message(message["role"], avatar=icon):
                         st.write(message["content"])
 
-        st.chat_input(
-            "Enter your follow-up question..."
-            if st.session_state.language == "EN"
-            else "Zet het gesprek verder...",
-            key="chat_input",
-            on_submit=add_user_input,
-        )
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.chat_input(
+                "Enter your follow-up question..."
+                if st.session_state.language == "EN"
+                else "Zet het gesprek verder...",
+                key="chat_input",
+                on_submit=add_user_input,
+            )
+        with col2:
+            st.button(
+                "Clear chat history"
+                if st.session_state.language == "EN"
+                else "Chatgeschiedenis wissen",
+                on_click=new_question,
+                type="secondary",
+                use_container_width=True,
+            )
 
 
 if __name__ == "__main__":
