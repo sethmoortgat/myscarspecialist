@@ -24,9 +24,6 @@ logging.basicConfig(
 )
 
 
-lang_dict = {"🇧🇪  Nederlands": "NL", "🇬🇧  English": "EN"}
-
-
 def main():
     # ***************
     #
@@ -100,11 +97,6 @@ def main():
         )
         logging.info(f"New question: {st.session_state.chat_input}")
 
-    def change_language():
-        st.session_state.language = lang_dict[st.session_state.new_language]
-        logging.info(f"Language changed to: {st.session_state.language}")
-        new_question()
-
     # st.set_page_config(
     #         layout="centered",
     #         page_icon="./data/SCARBOT_AVATAR.png",
@@ -113,7 +105,6 @@ def main():
 
     @st.cache_resource
     def get_qdrant_client():
-        print(st.secrets)
         if "PATH_TO_VECTORSTORE" not in st.secrets:
             st.error("Error: PATH_TO_VECTORSTORE is not defined in secrets.toml")
             st.stop()
@@ -128,7 +119,14 @@ def main():
     # ***************
 
     if "language" not in st.session_state.keys():
-        st.session_state.language = "NL"
+        # for example when you browse to http://localhost:8501/?lang=nl, lang will be read as nl
+        query_params = st.query_params
+        url_language = query_params.get("lang", "EN").upper()
+        if url_language in ["NL", "EN"]:
+            st.session_state.language = url_language
+        else:
+            st.session_state.language = "EN"
+        logging.info(f"Language initialized from URL: {st.session_state.language}")
 
     if "question" not in st.session_state.keys():
         st.session_state.question = ""
@@ -167,49 +165,6 @@ def main():
 
     # ***************
     #
-    # Sticky header
-    #
-    # ***************
-
-    header = st.container()
-    with header:
-        col1, col2, col3 = st.columns([5, 5, 5])
-        with col1:
-            st.button(
-                "New question" if st.session_state.language == "EN" else "Nieuwe vraag",
-                on_click=new_question,
-                type="primary",
-            )
-        with col3:
-            st.selectbox(
-                label="language",
-                options=(lang_dict.keys()),
-                key="new_language",
-                on_change=change_language,
-                label_visibility="collapsed",
-            )
-    header.write("""<div class='fixed-header'/>""", unsafe_allow_html=True)
-
-    ### Custom CSS for the sticky header top: 3.755rem;
-    st.markdown(
-        """
-	<style>
-		div[data-testid="stVerticalBlock"] div:has(div.fixed-header) {
-			position: sticky;
-			top: 3.755rem;
-			background-color: white;
-			z-index: 999;
-		}
-		.fixed-header {
-			border-bottom: 1px solid black;
-		}
-	</style>
-		""",
-        unsafe_allow_html=True,
-    )
-
-    # ***************
-    #
     # Landing page for new question
     #
     # ***************
@@ -217,17 +172,17 @@ def main():
     if st.session_state.new_question:
         col1, col2, col3, col4 = st.columns([1, 3, 10, 1])
         with col2:
-            st.image("./data/SCARBOT_AVATAR.png", width=200)
+            st.image("./data/SCARBOT_AVATAR.png", use_container_width=True)
         with col3:
             st.markdown(
-                "## Hi, my name is Scarbot!"
+                "#### Hi, my name is Scarbot!"
                 if st.session_state.language == "EN"
-                else "## Hallo, mijn naam is Scarbot!"
+                else "#### Hallo, mijn naam is Scarbot!"
             )
             st.markdown(
-                "## How can I help you?"
+                "#### How can I help you?"
                 if st.session_state.language == "EN"
-                else "## Hoe kan ik je helpen?"
+                else "#### Hoe kan ik je helpen?"
             )
 
         label = (
@@ -383,13 +338,24 @@ def main():
                     with st.chat_message(message["role"], avatar=icon):
                         st.write(message["content"])
 
-        st.chat_input(
-            "Enter your follow-up question..."
-            if st.session_state.language == "EN"
-            else "Zet het gesprek verder...",
-            key="chat_input",
-            on_submit=add_user_input,
-        )
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.chat_input(
+                "Enter your follow-up question..."
+                if st.session_state.language == "EN"
+                else "Zet het gesprek verder...",
+                key="chat_input",
+                on_submit=add_user_input,
+            )
+        with col2:
+            st.button(
+                "Clear chat history"
+                if st.session_state.language == "EN"
+                else "Chatgeschiedenis wissen",
+                on_click=new_question,
+                type="secondary",
+                use_container_width=True,
+            )
 
 
 if __name__ == "__main__":
