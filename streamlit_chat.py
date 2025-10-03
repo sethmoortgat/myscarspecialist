@@ -172,17 +172,17 @@ def main():
     if st.session_state.new_question:
         col1, col2, col3, col4 = st.columns([1, 3, 10, 1])
         with col2:
-            st.image("./data/SCARBOT_AVATAR.png", width=200)
+            st.image("./data/SCARBOT_AVATAR.png", use_container_width=True)
         with col3:
             st.markdown(
-                "## Hi, my name is Scarbot!"
+                "#### Hi, my name is Scarbot!"
                 if st.session_state.language == "EN"
-                else "## Hallo, mijn naam is Scarbot!"
+                else "#### Hallo, mijn naam is Scarbot!"
             )
             st.markdown(
-                "## How can I help you?"
+                "#### How can I help you?"
                 if st.session_state.language == "EN"
-                else "## Hoe kan ik je helpen?"
+                else "#### Hoe kan ik je helpen?"
             )
 
         label = (
