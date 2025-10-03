@@ -163,8 +163,6 @@ def main():
     if "chat_history" not in st.session_state.keys():
         st.session_state.chat_history = []
 
-
-
     # ***************
     #
     # Landing page for new question
