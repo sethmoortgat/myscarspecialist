@@ -119,6 +119,7 @@ def main():
     # ***************
 
     if "language" not in st.session_state.keys():
+        # for example when you browse to http://localhost:8501/?lang=nl, lang will be read as nl
         query_params = st.query_params
         url_language = query_params.get("lang", "EN").upper()
         if url_language in ["NL", "EN"]:
