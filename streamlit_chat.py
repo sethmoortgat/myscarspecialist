@@ -24,9 +24,6 @@ logging.basicConfig(
 )
 
 
-lang_dict = {"🇧🇪  Nederlands": "NL", "🇬🇧  English": "EN"}
-
-
 def main():
     # ***************
     #
@@ -100,11 +97,6 @@ def main():
         )
         logging.info(f"New question: {st.session_state.chat_input}")
 
-    def change_language():
-        st.session_state.language = lang_dict[st.session_state.new_language]
-        logging.info(f"Language changed to: {st.session_state.language}")
-        new_question()
-
     # st.set_page_config(
     #         layout="centered",
     #         page_icon="./data/SCARBOT_AVATAR.png",
@@ -113,7 +105,6 @@ def main():
 
     @st.cache_resource
     def get_qdrant_client():
-        print(st.secrets)
         if "PATH_TO_VECTORSTORE" not in st.secrets:
             st.error("Error: PATH_TO_VECTORSTORE is not defined in secrets.toml")
             st.stop()
@@ -128,7 +119,13 @@ def main():
     # ***************
 
     if "language" not in st.session_state.keys():
-        st.session_state.language = "NL"
+        query_params = st.query_params
+        url_language = query_params.get("lang", "EN").upper()
+        if url_language in ["NL", "EN"]:
+            st.session_state.language = url_language
+        else:
+            st.session_state.language = "EN"
+        logging.info(f"Language initialized from URL: {st.session_state.language}")
 
     if "question" not in st.session_state.keys():
         st.session_state.question = ""
@@ -173,20 +170,12 @@ def main():
 
     header = st.container()
     with header:
-        col1, col2, col3 = st.columns([5, 5, 5])
+        col1, col2 = st.columns([5, 10])
         with col1:
             st.button(
                 "New question" if st.session_state.language == "EN" else "Nieuwe vraag",
                 on_click=new_question,
                 type="primary",
-            )
-        with col3:
-            st.selectbox(
-                label="language",
-                options=(lang_dict.keys()),
-                key="new_language",
-                on_change=change_language,
-                label_visibility="collapsed",
             )
     header.write("""<div class='fixed-header'/>""", unsafe_allow_html=True)
 
