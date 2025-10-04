@@ -172,7 +172,7 @@ def main():
     if st.session_state.new_question:
         col1, col2, col3, col4 = st.columns([1, 3, 10, 1])
         with col2:
-            st.image("./data/SCARBOT_AVATAR.png", use_container_width=True)
+            st.image("./data/SCARBOT_AVATAR.png", width=150)
         with col3:
             st.markdown(
                 "#### Hi, my name is Scarbot!"
