@@ -7,51 +7,33 @@ import logging
 
 def get_context(
     query,
-    vectorstore,
+    qdrant_client,
+    collection_name,
+    embedding_function,
     n_chunks=3,
     filters=None,
 ):
-    # Debug log what filter is being used
     logging.info(f"Using filter: {filters}")
 
-    # Try to retrieve chunks
-    chunks = vectorstore.max_marginal_relevance_search(
-        query,
-        k=n_chunks,
-        filter=filters,
+    query_vector = embedding_function.embed_query(query)
+
+    results = qdrant_client.query_points(
+        collection_name=collection_name,
+        query=query_vector,
+        limit=n_chunks,
     )
 
-    # Log the number of chunks found
-    logging.info(f"Found {len(chunks)} chunks for query: {query}")
+    logging.info(f"Found {len(results.points)} chunks for query: {query}")
 
-    # If no chunks found, try without filter
-    if len(chunks) == 0 and filters is not None:
-        logging.warning(f"No chunks found with filter. Trying without filter...")
-        chunks = vectorstore.max_marginal_relevance_search(
-            query,
-            k=n_chunks,
-            filter=None,
-        )
-        logging.info(f"Found {len(chunks)} chunks without filter")
-
-    # Collect and log the source URLs
-    if chunks:
-        source_urls = [chunk.metadata["url"] for chunk in chunks]
+    if results.points:
+        source_urls = [point.payload.get("url", "unknown") for point in results.points]
         logging.info(f"Chunks retrieved from URLs: {source_urls}")
 
-        # Debug the metadata structure of the first chunk
-        if len(chunks) > 0:
-            logging.info(f"First chunk metadata: {chunks[0].metadata}")
-
     context = ""
-    for _chunk in chunks:
-        summary = (
-            "###\n"
-            + _chunk.page_content
-            + "\n This info was retrieved from: "
-            + _chunk.metadata["url"]
-            + "\n###\n"
-        )
+    for point in results.points:
+        text = point.payload.get("text", "")
+        url = point.payload.get("url", "unknown source")
+        summary = "###\n" + text + "\n This info was retrieved from: " + url + "\n###\n"
         context += summary
 
     return context

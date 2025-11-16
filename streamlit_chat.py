@@ -1,5 +1,4 @@
-from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient, models
+from qdrant_client import QdrantClient
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 
 from src.prompts import (
@@ -39,7 +38,7 @@ def main():
         """Returns `True` if the user had the correct password."""
 
         # Check if check_password is set to False in secrets.toml
-        if "check_password" in st.secrets and st.secrets["check_password"] == False:
+        if "check_password" in st.secrets and st.secrets["check_password"] is False:
             return True
 
         # If check_password setting is missing or True, proceed with password check
@@ -105,11 +104,16 @@ def main():
 
     @st.cache_resource
     def get_qdrant_client():
-        if "PATH_TO_VECTORSTORE" not in st.secrets:
-            st.error("Error: PATH_TO_VECTORSTORE is not defined in secrets.toml")
+        if "QDRANT_ENDPOINT" not in st.secrets:
+            st.error("Error: QDRANT_ENDPOINT is not defined in secrets.toml")
             st.stop()
-        vs_path = st.secrets["PATH_TO_VECTORSTORE"]
-        client = QdrantClient(path=vs_path)
+        if "QDRANT_API_KEY" not in st.secrets:
+            st.error("Error: QDRANT_API_KEY is not defined in secrets.toml")
+            st.stop()
+        client = QdrantClient(
+            url=st.secrets["QDRANT_ENDPOINT"],
+            api_key=st.secrets["QDRANT_API_KEY"],
+        )
         return client
 
     # ***************
@@ -140,15 +144,17 @@ def main():
     if "embedding_function" not in st.session_state.keys():
         st.session_state.embedding_function = OpenAIEmbeddings(
             api_key=st.secrets["openai_api_key"],
-            model="text-embedding-3-large",
+            model="text-embedding-3-small",
         )
 
-    if "vectorstore" not in st.session_state.keys():
-        st.session_state.vectorstore = QdrantVectorStore(
-            client=get_qdrant_client(),
-            collection_name="myscarspecialist",
-            embedding=st.session_state.embedding_function,
-        )
+    if "qdrant_client" not in st.session_state.keys():
+        st.session_state.qdrant_client = get_qdrant_client()
+
+    if "collection_name" not in st.session_state.keys():
+        if "QDRANT_COLLECTION_ID" not in st.secrets:
+            st.error("Error: QDRANT_COLLECTION_ID is not defined in secrets.toml")
+            st.stop()
+        st.session_state.collection_name = st.secrets["QDRANT_COLLECTION_ID"]
 
     if "openai_client" not in st.session_state.keys():
         st.session_state.openai_client = ChatOpenAI(
@@ -225,21 +231,11 @@ def main():
                 else "Website doorzoeken..."
             ):
                 st.session_state.context = get_context(
-                    st.session_state.question,
-                    st.session_state.vectorstore,
-                    n_chunks=3,
-                    filters=models.Filter(
-                        must=[
-                            models.FieldCondition(
-                                key="metadata.language",
-                                match=models.MatchValue(
-                                    value="nl"
-                                    if st.session_state.language == "NL"
-                                    else "en"
-                                ),
-                            ),
-                        ]
-                    ),
+                    query=st.session_state.question,
+                    qdrant_client=st.session_state.qdrant_client,
+                    collection_name=st.session_state.collection_name,
+                    embedding_function=st.session_state.embedding_function,
+                    n_chunks=5,
                 )
             context_prompt = context_template_text.format(
                 context=st.session_state.context
@@ -289,21 +285,11 @@ def main():
                 else "Website doorzoeken..."
             ):
                 follow_up_context = get_context(
-                    transformed_last_question,
-                    st.session_state.vectorstore,
-                    n_chunks=2,
-                    filters=models.Filter(
-                        must=[
-                            models.FieldCondition(
-                                key="metadata.language",
-                                match=models.MatchValue(
-                                    value="nl"
-                                    if st.session_state.language == "NL"
-                                    else "en"
-                                ),
-                            ),
-                        ]
-                    ),
+                    query=transformed_last_question,
+                    qdrant_client=st.session_state.qdrant_client,
+                    collection_name=st.session_state.collection_name,
+                    embedding_function=st.session_state.embedding_function,
+                    n_chunks=5,
                 )
             context_prompt = context_template_text.format(context=follow_up_context)
             st.session_state.messages.append(
